@@ -17,9 +17,11 @@
 package com.android.internal.util.arrow;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.hardware.input.InputManager;
+import android.hardware.SensorManager;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.os.RemoteException;
@@ -37,10 +39,29 @@ import android.content.pm.PackageManager.NameNotFoundException;
 
 import com.android.internal.statusbar.IStatusBarService;
 
+import static android.hardware.Sensor.TYPE_LIGHT;
+import static android.hardware.Sensor.TYPE_PROXIMITY;
+
 /**
  * Some custom utilities
  */
 public class ArrowUtils {
+
+    /**
+     * @hide
+     */
+    public static final String SYSTEMUI_PACKAGE_NAME = "com.android.systemui";
+
+    /**
+     * @hide
+     */
+    public static final String ACTION_DISMISS_KEYGUARD = SYSTEMUI_PACKAGE_NAME +".ACTION_DISMISS_KEYGUARD";
+
+    /**
+     * @hide
+     */
+    public static final String DISMISS_KEYGUARD_EXTRA_INTENT = "launch";
+
 
     public static void switchScreenOff(Context ctx) {
         PowerManager pm = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
@@ -68,12 +89,33 @@ public class ArrowUtils {
         return isPackageInstalled(context, pkg, true);
     }
 
+    public static boolean deviceSupportsProximitySensor(Context context) {
+        SensorManager sm = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+        return sm.getDefaultSensor(TYPE_PROXIMITY) != null;
+    }
+
+    public static boolean deviceSupportsLightSensor(Context context) {
+        SensorManager sm = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+        return sm.getDefaultSensor(TYPE_LIGHT) != null;
+    }
+
     public static boolean deviceHasFlashlight(Context ctx) {
         return ctx.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
     }
 
     public static void toggleCameraFlash() {
         FireActions.toggleCameraFlash();
+    }
+
+
+    /**
+     * @hide
+     */
+    public static void launchKeyguardDismissIntent(Context context, UserHandle user, Intent launchIntent) {
+        Intent keyguardIntent = new Intent(ACTION_DISMISS_KEYGUARD);
+        keyguardIntent.setPackage(SYSTEMUI_PACKAGE_NAME);
+        keyguardIntent.putExtra(DISMISS_KEYGUARD_EXTRA_INTENT, launchIntent);
+        context.sendBroadcastAsUser(keyguardIntent, user);
     }
 
     public static void sendKeycode(int keycode) {
